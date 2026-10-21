@@ -286,6 +286,26 @@ run "rejects_bad_prefix" {
   expect_failures = [var.name_prefix]
 }
 
+run "rejects_dotted_vault_name_as_key_name" {
+  command = plan
+
+  variables {
+    vault_name = "prod.backup"
+  }
+
+  expect_failures = [var.kms_key_name]
+}
+
+run "rejects_reserved_key_alias_prefix" {
+  command = plan
+
+  variables {
+    kms_key_name = "aws/backup"
+  }
+
+  expect_failures = [var.kms_key_name]
+}
+
 run "rejects_unknown_lock_mode" {
   command = plan
 

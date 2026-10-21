@@ -34,8 +34,8 @@ variable "kms_key_name" {
   default     = null
 
   validation {
-    condition     = var.kms_key_name == null || can(regex("^[A-Za-z0-9/_-]{1,250}$", coalesce(var.kms_key_name, "-")))
-    error_message = "kms_key_name must be null or 1 to 250 characters of letters, digits, slashes, underscores and hyphens."
+    condition     = can(regex("^[A-Za-z0-9/_-]{1,250}$", coalesce(var.kms_key_name, var.vault_name))) && !startswith(coalesce(var.kms_key_name, var.vault_name), "aws/")
+    error_message = "The key name (kms_key_name, or vault_name when null) must be 1 to 250 characters of letters, digits, slashes, underscores and hyphens, and must not start with aws/, because KMS alias names allow neither dots nor that prefix."
   }
 }
 

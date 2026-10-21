@@ -95,5 +95,9 @@ data "aws_iam_policy_document" "tfstate_web" {
 
 resource "aws_s3_bucket_policy" "tfstate_web" {
   bucket = aws_s3_bucket.tfstate_web.id
+
+  # S3 can reject concurrent bucket-level configuration calls.
+  depends_on = [aws_s3_bucket_public_access_block.tfstate_web]
+
   policy = data.aws_iam_policy_document.tfstate_web.json
 }
