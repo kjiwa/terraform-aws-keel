@@ -52,7 +52,7 @@ variable "log_group_retention_days" {
 }
 
 variable "kms_encryption_enabled" {
-  description = "Encrypt the trail objects and the trail's log group with a customer-managed KMS key (bool). The key costs about 1 USD per month; false falls back to SSE-S3 on the trail bucket and no encryption key on the log group. Switching it replaces the key and the trail's encryption settings."
+  description = "Encrypt the trail objects and the trail's log group with a customer-managed KMS key (bool). The key costs about 1 USD per month; false falls back to SSE-S3 on the trail bucket and no encryption key on the log group. Turning it off on a deployed stack is refused by prevent_destroy on the key."
   type        = bool
   default     = true
   nullable    = false
