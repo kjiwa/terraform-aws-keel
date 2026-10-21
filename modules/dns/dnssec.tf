@@ -65,6 +65,11 @@ resource "aws_kms_key" "dnssec" {
   deletion_window_in_days  = var.dnssec_key_deletion_window_days
   enable_key_rotation      = false
   policy                   = data.aws_iam_policy_document.dnssec_kms[each.key].json
+
+  # The DS record stays published at the registrar; destroying the key breaks validating resolvers.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_kms_alias" "dnssec" {
