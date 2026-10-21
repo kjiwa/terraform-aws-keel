@@ -72,7 +72,11 @@ _ensure_terraform_docs() {
 
 main() {
   _main_check=""
-  [ "${1:-}" != "--check" ] || _main_check="--output-check"
+  case "$#:${1:-}" in
+  0:) ;;
+  1:--check) _main_check="--output-check" ;;
+  *) usage ;;
+  esac
   _main_bin="$(_ensure_terraform_docs)"
   for _main_module in "$REPO_ROOT"/modules/*/; do
     # shellcheck disable=SC2086 # empty _main_check must expand to nothing
