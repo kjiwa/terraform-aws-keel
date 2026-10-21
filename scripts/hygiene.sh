@@ -5,13 +5,15 @@
 #   ./hygiene.sh FILE...
 set -eu
 
+# The account ID AWS uses in its own documentation; no real account has it.
+readonly DOCUMENTED_ACCOUNT_ID='123456789012'
 readonly PATTERN_ACCOUNT_ID='(^|[^0-9A-Za-z])[0-9]{12}([^0-9A-Za-z]|$)'
 readonly PATTERN_PROFILE='(AWS_PROFILE=|--profile[= ])["'"'"']?[A-Za-z0-9]|profile[[:space:]]*=[[:space:]]*"[A-Za-z0-9]'
 readonly PATTERN_EMAIL='[A-Za-z0-9._%+-]+@(gmail|googlemail|outlook|hotmail|yahoo|icloud|proton|protonmail)\.(com|me)'
 readonly PATTERN_HOME='/(Users|home)/[A-Za-z0-9._-]+/'
 
 _check() {
-  _check_hits="$(grep -InE -e "$2" "$3" || true)"
+  _check_hits="$(sed "s/$DOCUMENTED_ACCOUNT_ID/_/g" "$3" | grep -nE -e "$2" || true)"
   [ -z "$_check_hits" ] && return 0
   printf '%s\n' "$_check_hits" | sed "s|^|$3:$1: |" >&2
   return 1

@@ -23,9 +23,10 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 check_line "clean text" 0 "terraform apply with var.account_id"
-check_line "account id" 1 "account $(printf '%s%s' 1234 56789012) here"
+check_line "account id" 1 "account $(printf '%s%s' 9876 54321098) here"
+check_line "documented example id" 0 "account 123456789012"
 check_line "13 digits is not an id" 0 "serial $(printf '%s%s' 1234 567890123)"
-check_line "hex run is not an id" 0 "sha ab$(printf '%s%s' 1234 56789012)cd"
+check_line "hex run is not an id" 0 "sha ab$(printf '%s%s' 9876 54321098)cd"
 check_line "profile env" 1 "export AWS_PROFILE=$(printf 'my%s' admin)"
 check_line "profile flag" 1 "aws s3 ls --profile $(printf 'my%s' admin)"
 check_line "profile hcl" 1 "profile = \"$(printf 'my%s' admin)\""
