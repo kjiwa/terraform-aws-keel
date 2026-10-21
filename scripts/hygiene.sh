@@ -12,8 +12,14 @@ readonly PATTERN_PROFILE='(AWS_PROFILE=|--profile[= ])["'"'"']?[A-Za-z0-9]|profi
 readonly PATTERN_EMAIL='[A-Za-z0-9._%+-]+@(gmail|googlemail|outlook|hotmail|yahoo|icloud|proton|protonmail)\.(com|me)'
 readonly PATTERN_HOME='/(Users|home)/[A-Za-z0-9._-]+/'
 
+# Two passes: adjacent matches share their separator, which one pass consumes.
+_without_documented_id() {
+  _without_pattern="(^|[^0-9A-Za-z])$DOCUMENTED_ACCOUNT_ID([^0-9A-Za-z]|$)"
+  sed -E "s/$_without_pattern/\\1_\\2/g" | sed -E "s/$_without_pattern/\\1_\\2/g"
+}
+
 _check() {
-  _check_hits="$(sed "s/$DOCUMENTED_ACCOUNT_ID/_/g" "$3" | grep -nE -e "$2" || true)"
+  _check_hits="$(_without_documented_id <"$3" | grep -nE -e "$2" || true)"
   [ -z "$_check_hits" ] && return 0
   printf '%s\n' "$_check_hits" | sed "s|^|$3:$1: |" >&2
   return 1
