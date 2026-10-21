@@ -96,7 +96,7 @@ run "dnssec_off_by_default" {
   }
 }
 
-run "key_deletion_window" {
+run "key_deletion_window_default" {
   command = plan
 
   providers = {
@@ -107,6 +107,15 @@ run "key_deletion_window" {
   assert {
     condition     = aws_kms_key.dnssec["example.org"].deletion_window_in_days == 30
     error_message = "The DNSSEC key deletion window must default to 30 days."
+  }
+}
+
+run "key_deletion_window_override" {
+  command = plan
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
   }
 
   variables {
