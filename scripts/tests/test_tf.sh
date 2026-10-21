@@ -35,6 +35,9 @@ assert_eq "init gets backend config" \
 assert_eq "output passes through" \
   "$WORK/cfg/.terraform -chdir=$WORK/root output -raw x" \
   "$(run_tf output -raw x)"
+assert_eq "relative config dir resolves to absolute" \
+  "$WORK/cfg/.terraform -chdir=root plan -var-file=$WORK/cfg/terraform.tfvars" \
+  "$(cd "$WORK" && PATH="$WORK/bin:$PATH" sh "$TF" root cfg plan)"
 assert_status "missing args prints usage" 2 env PATH="$WORK/bin:$PATH" sh "$TF"
 assert_status "missing root dir" 1 env PATH="$WORK/bin:$PATH" sh "$TF" "$WORK/none" "$WORK/cfg" plan
 

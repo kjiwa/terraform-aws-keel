@@ -32,6 +32,10 @@ main() {
   shift 3
   [ -d "$_main_root_dir" ] || die "no root directory: $_main_root_dir"
   [ -d "$_main_config_dir" ] || die "no config directory: $_main_config_dir"
+  _main_config_dir="$(
+    unset CDPATH
+    cd -- "$_main_config_dir" && pwd
+  )"
 
   case "$_main_cmd" in
   init)
