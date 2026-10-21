@@ -9,6 +9,26 @@ mock_provider "aws" {
       region = "us-east-1"
     }
   }
+  mock_resource "aws_sns_topic" {
+    defaults = {
+      arn = "arn:aws:sns:us-east-1:123456789012:demo-app-audit"
+    }
+  }
+  mock_resource "aws_cloudwatch_log_group" {
+    defaults = {
+      arn = "arn:aws:logs:us-east-1:123456789012:log-group:/aws/cloudtrail/demo-app"
+    }
+  }
+  mock_resource "aws_iam_role" {
+    defaults = {
+      arn = "arn:aws:iam::123456789012:role/demo-app-cloudtrail-logs"
+    }
+  }
+  mock_resource "aws_kms_key" {
+    defaults = {
+      arn = "arn:aws:kms:us-east-1:123456789012:key/demo"
+    }
+  }
   mock_data "aws_iam_policy_document" {
     defaults = {
       json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}"
@@ -84,6 +104,29 @@ run "default_resource_shape" {
   }
 }
 
+run "kms_off_uses_sse_s3" {
+  command = plan
+
+  variables {
+    kms_encryption_enabled = false
+  }
+
+  assert {
+    condition     = length(aws_kms_key.audit) == 0 && length(aws_kms_alias.audit) == 0
+    error_message = "Disabling KMS must create no key or alias."
+  }
+
+  assert {
+    condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.trail.rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"
+    error_message = "Without KMS the trail bucket must use AES256."
+  }
+
+  assert {
+    condition     = aws_cloudtrail.main.kms_key_id == null && aws_cloudwatch_log_group.trail.kms_key_id == null
+    error_message = "Without KMS neither the trail nor its log group may reference a key."
+  }
+}
+
 run "kms_on_by_default" {
   command = apply
 
@@ -110,29 +153,6 @@ run "kms_on_by_default" {
   assert {
     condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.logs.rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"
     error_message = "The access-log bucket must stay SSE-S3 so S3 logging can deliver."
-  }
-}
-
-run "kms_off_uses_sse_s3" {
-  command = apply
-
-  variables {
-    kms_encryption_enabled = false
-  }
-
-  assert {
-    condition     = length(aws_kms_key.audit) == 0 && length(aws_kms_alias.audit) == 0
-    error_message = "Disabling KMS must create no key or alias."
-  }
-
-  assert {
-    condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.trail.rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"
-    error_message = "Without KMS the trail bucket must use AES256."
-  }
-
-  assert {
-    condition     = aws_cloudtrail.main.kms_key_id == "" && aws_cloudwatch_log_group.trail.kms_key_id == ""
-    error_message = "Without KMS neither the trail nor its log group may reference a key."
   }
 }
 
@@ -207,7 +227,7 @@ run "backup_account_archives_expected_access" {
   command = plan
 
   variables {
-    backup_account_id = "210987654321"
+    backup_account_id = "123456789012"
   }
 
   assert {

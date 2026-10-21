@@ -6,10 +6,11 @@ Shared Terraform modules and scripts for single-instance AWS apps: audit, finops
 
 | Module | Purpose |
 | --- | --- |
+| [`modules/audit`](modules/audit) | CloudTrail in an Object-Locked bucket, optional KMS, Access Analyzer, S3 access logging, tamper alarms, password policy. |
 | [`modules/finops`](modules/finops) | Monthly cost budget with alerts and a cost anomaly monitor. |
 | [`modules/dns`](modules/dns) | Route 53 hosted zones, optional DNSSEC per domain, extra records. |
 
-Further modules (audit, state bucket, backup vault account) are not released yet.
+Further modules (state bucket, backup vault account) are not released yet.
 
 ## Usage
 
