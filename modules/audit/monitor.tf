@@ -1,19 +1,12 @@
-# The detection half of the audit module. CloudTrail (trail_bucket.tf) and
-# Access Analyzer (access_analyzer.tf) both record; nothing here creates records,
-# it only routes them somewhere a human is notified. Without this, the trail is a
-# write-only archive and Access Analyzer findings sit in a console nobody opens.
+# Routes CloudTrail and Access Analyzer records to a human via SNS.
 
-# One topic for every audit-plane alert. Separate from a workload's operational
-# topic on purpose: that one is about whether the app is up, this one is security
-# (did someone change the account).
+# One topic for every audit-plane alert, separate from an application's
+# operational topic: this one is about account changes, not uptime.
 #
-# Deliberately NOT KMS-encrypted, matching the operational topic: a CMK on the
-# topic forces every publisher principal (here cloudwatch.amazonaws.com and
-# events.amazonaws.com) into the key policy with Decrypt + GenerateDataKey, and
-# getting it wrong makes SNS silently drop the message rather than error. The
-# payloads are alarm names and one-line finding summaries -- the sensitive
-# material (the audit records themselves) lives in the Object-Locked bucket, not
-# in these notifications.
+# Deliberately NOT KMS-encrypted: a CMK on the topic needs every publisher
+# principal in the key policy, and a mistake makes SNS drop messages silently.
+# The payloads are alarm names and one-line summaries; the audit records live in
+# the Object-Locked bucket.
 resource "aws_sns_topic" "audit" {
   name = "${var.name_prefix}-audit"
 
@@ -75,15 +68,13 @@ resource "aws_cloudwatch_event_target" "access_analyzer_sns" {
   target_id = "audit-sns"
   arn       = aws_sns_topic.audit.arn
 
-  # Flatten the finding into a one-line human summary instead of mailing raw
-  # EventBridge JSON.
+  # Scalar paths only: an array-valued path does not render into the template.
   input_transformer {
     input_paths = {
       resource = "$.detail.resource"
       type     = "$.detail.resourceType"
-      action   = "$.detail.action"
     }
-    input_template = "\"Access Analyzer: <resource> (<type>) is externally accessible. Actions: <action>.\""
+    input_template = "\"Access Analyzer: <resource> (<type>) is externally accessible.\""
   }
 }
 
@@ -106,6 +97,16 @@ data "aws_iam_policy_document" "trail_to_logs_assume" {
     principals {
       type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [local.account_id]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceArn"
+      values   = [local.trail_arn]
     }
   }
 }
@@ -133,16 +134,24 @@ resource "aws_iam_role_policy" "trail_to_logs" {
   policy = data.aws_iam_policy_document.trail_to_logs.json
 }
 
-# A metric filter + alarm per event class we want paged on. Kept to the handful
-# that actually signal account tampering rather than every management event: the
-# root account being used, IAM/policy changes, and CloudTrail itself being
-# stopped or reconfigured (the classic "disable logging before doing damage"
-# move). Each alarm publishes to the audit topic.
+# A metric filter + alarm per tamper-signalling event class, each publishing to
+# the audit topic.
 locals {
+  # Explicit names, not wildcards: Put*Policy and friends also match unrelated
+  # events in other services.
+  iam_policy_change_events = [
+    "PutUserPolicy", "PutGroupPolicy", "PutRolePolicy", "CreatePolicy", "DeletePolicy",
+    "CreatePolicyVersion", "DeletePolicyVersion", "SetDefaultPolicyVersion",
+    "AttachRolePolicy", "DetachRolePolicy", "AttachUserPolicy", "DetachUserPolicy",
+    "AttachGroupPolicy", "DetachGroupPolicy", "DeleteRolePolicy", "DeleteUserPolicy",
+    "DeleteGroupPolicy", "UpdateAssumeRolePolicy", "PutRolePermissionsBoundary",
+    "DeleteRolePermissionsBoundary", "PutUserPermissionsBoundary", "DeleteUserPermissionsBoundary",
+  ]
+
   # name -> CloudWatch Logs metric-filter pattern.
   audit_filters = {
     root-account-used = "{ $.userIdentity.type = \"Root\" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != \"AwsServiceEvent\" }"
-    iam-policy-change = "{ ($.eventName = Put*Policy) || ($.eventName = Delete*Policy) || ($.eventName = Attach*Policy) || ($.eventName = Detach*Policy) || ($.eventName = Create*Policy*) }"
+    iam-policy-change = "{ ($.eventSource = iam.amazonaws.com) && (${join(" || ", [for e in local.iam_policy_change_events : "($.eventName = ${e})"])}) }"
     cloudtrail-change = "{ ($.eventSource = cloudtrail.amazonaws.com) && (($.eventName = StopLogging) || ($.eventName = DeleteTrail) || ($.eventName = UpdateTrail) || ($.eventName = PutEventSelectors)) }"
   }
 }
