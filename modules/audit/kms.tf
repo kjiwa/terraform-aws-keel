@@ -74,13 +74,3 @@ resource "aws_kms_alias" "audit" {
   name          = "alias/${var.name_prefix}-audit"
   target_key_id = aws_kms_key.audit[0].key_id
 }
-
-moved {
-  from = aws_kms_key.audit
-  to   = aws_kms_key.audit[0]
-}
-
-moved {
-  from = aws_kms_alias.audit
-  to   = aws_kms_alias.audit[0]
-}

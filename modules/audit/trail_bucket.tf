@@ -1,15 +1,9 @@
-# Dedicated bucket for the CloudTrail audit record, separate from the S3
-# server-access-log bucket for one hard reason: a bucket with Object Lock
-# enabled cannot be a server-access-logging destination. Object Lock is the
-# whole point of this bucket -- versioning plus prevent_destroy stop Terraform
-# and stop overwrites, but neither stops `s3:DeleteObjectVersion` from a
-# compromised or careless admin, and log-file validation only makes tampering
-# *evident* after the fact. GOVERNANCE mode makes the trail actually immutable
-# for the retention period to anyone without s3:BypassGovernanceRetention.
-#
-# GOVERNANCE, not COMPLIANCE: COMPLIANCE cannot be overridden by anyone
-# including the account root, so a mis-set retention is a bill you cannot cancel.
-# Upgrade to COMPLIANCE if you want true WORM and accept that.
+# Dedicated CloudTrail bucket: an Object Lock bucket cannot be a server-access-
+# logging destination, so it cannot share the access-log bucket. GOVERNANCE mode makes the
+# trail immutable for the retention period to anyone without
+# s3:BypassGovernanceRetention; versioning and prevent_destroy do not stop
+# s3:DeleteObjectVersion. COMPLIANCE cannot be overridden even by root, so a
+# mis-set retention cannot be undone.
 resource "aws_s3_bucket" "trail" {
   bucket              = "${var.name_prefix}-trail-${local.account_id}"
   object_lock_enabled = true

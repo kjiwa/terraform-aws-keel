@@ -14,7 +14,7 @@ resource "aws_s3_bucket" "logs" {
     Name = "${var.name_prefix}-logs"
   }
 
-  # Contains the account's audit trail; never let a Terraform change delete it.
+  # Holds S3 access logs; never let a Terraform change delete it.
   lifecycle {
     prevent_destroy = true
   }
