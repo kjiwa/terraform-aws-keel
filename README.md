@@ -30,7 +30,7 @@ module "dns" {
 }
 ```
 
-A literal ref lets Dependabot propose bumps. Each module README lists its inputs, outputs, and required providers.
+A literal ref lets Dependabot propose bumps. Each module README lists its inputs, outputs, and version requirements; the dns module also needs the `aws.us_east_1` provider alias shown above.
 
 ## Versioning
 
@@ -44,5 +44,7 @@ terraform -chdir=modules/finops test
 sh scripts/tests/run.sh
 pre-commit run --all-files
 ```
+
+`scripts/tf.sh` runs Terraform for one root and one config directory (see its header), and `scripts/common.sh` holds the shared shell helpers it sources.
 
 The module tests use mocked providers and need no AWS credentials. `scripts/docs.sh` regenerates the module READMEs between their terraform-docs markers.

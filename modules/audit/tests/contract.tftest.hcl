@@ -295,3 +295,37 @@ run "rejects_reserved_namespace" {
 
   expect_failures = [var.metric_namespace]
 }
+
+run "iam_policy_change_filter_is_explicit" {
+  command = plan
+
+  assert {
+    condition = (
+      strcontains(aws_cloudwatch_log_metric_filter.audit["iam-policy-change"].pattern, "$.eventSource = iam.amazonaws.com")
+      && strcontains(aws_cloudwatch_log_metric_filter.audit["iam-policy-change"].pattern, "$.eventName = UpdateAssumeRolePolicy")
+      && !strcontains(aws_cloudwatch_log_metric_filter.audit["iam-policy-change"].pattern, "*")
+    )
+    error_message = "The iam-policy-change filter must be guarded by eventSource, name UpdateAssumeRolePolicy, and use no wildcards."
+  }
+}
+
+run "access_analyzer_template_has_scalar_paths_only" {
+  command = plan
+
+  assert {
+    condition     = alltrue([for k, v in one(aws_cloudwatch_event_target.access_analyzer_sns.input_transformer).input_paths : !strcontains(v, "$.detail.action")])
+    error_message = "input_paths must not reference array-valued fields such as $.detail.action."
+  }
+}
+
+run "trail_to_logs_trust_is_scoped" {
+  command = plan
+
+  assert {
+    condition = (
+      length([for c in one(data.aws_iam_policy_document.trail_to_logs_assume.statement).condition : c if c.variable == "aws:SourceAccount" && contains(c.values, "123456789012")]) == 1
+      && length([for c in one(data.aws_iam_policy_document.trail_to_logs_assume.statement).condition : c if c.variable == "aws:SourceArn" && contains(c.values, "arn:aws:cloudtrail:us-east-1:123456789012:trail/demo-app")]) == 1
+    )
+    error_message = "The CloudTrail-to-logs role trust must be conditioned on this account and this trail."
+  }
+}

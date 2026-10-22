@@ -3,11 +3,6 @@
 # blow through it. Budgets emails the address directly -- no SNS topic, no
 # subscription to confirm. AWS bills only action-enabled budgets beyond the
 # first two per account; this budget has no actions.
-#
-# Cost-allocation tag activation is a separate, out-of-band step: in an AWS
-# Organization member account, aws_ce_cost_allocation_tag returns
-# AccessDenied -- activation is owned by the management (payer) account's
-# Billing console, is not retroactive, and takes ~24h to surface.
 resource "aws_budgets_budget" "monthly" {
   name         = "${var.name_prefix}-monthly"
   budget_type  = "COST"

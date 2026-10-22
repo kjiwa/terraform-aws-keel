@@ -28,7 +28,7 @@ resource "aws_kms_key" "backup_replica" {
         Action    = "kms:*"
         Resource  = "*"
       },
-      # Encrypt-shaped, never kms:*: the source account must not be able to
+      # Data-key actions only, never kms:*: the source account must not be able to
       # schedule this key for deletion, which would crypto-shred the off-site
       # copies from the account they exist to survive. Spelled out because the
       # source key policy on the other side must list the same actions; the

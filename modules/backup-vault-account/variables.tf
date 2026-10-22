@@ -54,7 +54,7 @@ variable "rds_service_linked_role_enabled" {
 }
 
 variable "vault_reader_source_role_name" {
-  description = "Name of a role in the source account that may assume a read-only role here (string), or null for no such role. The role can only call backup:DescribeBackupVault on this vault, which lets a status page read the lock state. Trust names the source account root plus a PrincipalArn condition, so the source role need not exist yet."
+  description = "Name of a role in the source account that may assume a read-only role here (string), or null for no such role. The role can only call backup:DescribeBackupVault on this vault, which lets a monitoring or status role read the lock state. Trust names the source account root plus a PrincipalArn condition, so the source role need not exist yet."
   type        = string
   default     = null
 

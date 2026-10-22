@@ -1,6 +1,4 @@
-# Cost Anomaly Detection: a per-service monitor that flags spend deviating
-# from the learned baseline, catching runaways the fixed monthly budget
-# would miss until month-end. Uses the caller's default aws provider.
+# Cost Anomaly Detection: a per-service monitor on spend deviating from baseline.
 #
 # Both Budgets and Anomaly Detection read billing data that trails actual
 # usage by 8-24h, so neither catches a runaway while it is still happening.

@@ -1,6 +1,6 @@
 data "aws_caller_identity" "current" {}
 
-resource "aws_kms_key" "tfstate_web" {
+resource "aws_kms_key" "this" {
   count                   = var.kms_encryption_enabled ? 1 : 0
   description             = "Encrypts the ${var.bucket_name} S3 bucket"
   enable_key_rotation     = true
@@ -29,8 +29,8 @@ resource "aws_kms_key" "tfstate_web" {
   }
 }
 
-resource "aws_kms_alias" "tfstate_web" {
+resource "aws_kms_alias" "this" {
   count         = var.kms_encryption_enabled ? 1 : 0
   name          = "alias/s3/${var.bucket_name}"
-  target_key_id = aws_kms_key.tfstate_web[0].key_id
+  target_key_id = aws_kms_key.this[0].key_id
 }
