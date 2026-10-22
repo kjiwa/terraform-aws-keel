@@ -342,3 +342,12 @@ run "rejects_short_compliance_window" {
 
   expect_failures = [var.vault_lock]
 }
+
+run "restore_role_trust_is_scoped_to_this_account" {
+  command = plan
+
+  assert {
+    condition     = length([for c in one(data.aws_iam_policy_document.restore_assume.statement).condition : c if c.variable == "aws:SourceAccount" && contains(c.values, "123456789012")]) == 1
+    error_message = "The restore role trust must be conditioned on aws:SourceAccount equal to this account."
+  }
+}
