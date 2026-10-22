@@ -9,6 +9,16 @@ updates:
       actions:
         patterns: ["*"]
 
+  # Lock files only; the modules' versions.tf floors stay broad on purpose.
+  - package-ecosystem: terraform
+    directories:
+      - /modules/*
+    schedule:
+      interval: weekly
+    groups:
+      providers:
+        patterns: ["*"]
+
   - package-ecosystem: pre-commit
     directory: /
     schedule:
