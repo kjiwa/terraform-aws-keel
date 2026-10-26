@@ -76,6 +76,16 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
       days_after_initiation = 7
     }
   }
+
+  rule {
+    id     = "expire-delete-markers"
+    status = "Enabled"
+    filter {}
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
 }
 
 # Bucket policy: let the S3 logging service deliver access logs, scoped to this

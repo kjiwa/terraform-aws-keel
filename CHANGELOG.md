@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.1.2
+
+### Fixed
+
+- audit: the trail and log buckets gain an `expire-delete-markers` lifecycle rule. Expiring current versions leaves delete markers; once `noncurrent_version_expiration` removed the versions beneath them, the markers stayed forever.
+- state-bucket: the `expire-noncurrent-versions` rule also removes expired delete markers, for the same reason.
+
+### Added
+
+- audit: `password_policy_enabled` (default `true`) opts out of managing the account password policy.
+
+### Changed
+
+- audit: `aws_iam_account_password_policy.strict` is now indexed. A `moved` block ships in the module; a consumer plan shows a state move only.
+
 ## v0.1.1
 
 ### Changed

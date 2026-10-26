@@ -18,7 +18,7 @@ Pin every module to a release tag with a literal `ref`:
 
 ```hcl
 module "dns" {
-  source = "github.com/kjiwa/terraform-aws-keel//modules/dns?ref=v0.1.0"
+  source = "github.com/kjiwa/terraform-aws-keel//modules/dns?ref=v0.1.2"
 
   name_prefix = "example"
   domains     = { "example.com" = { dnssec = true } }

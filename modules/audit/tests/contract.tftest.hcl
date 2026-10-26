@@ -99,7 +99,7 @@ run "default_resource_shape" {
   }
 
   assert {
-    condition     = aws_iam_account_password_policy.strict.minimum_password_length == 14
+    condition     = aws_iam_account_password_policy.strict[0].minimum_password_length == 14
     error_message = "The password policy must be created with its 14-character minimum."
   }
 }
@@ -327,5 +327,40 @@ run "trail_to_logs_trust_is_scoped" {
       && length([for c in one(data.aws_iam_policy_document.trail_to_logs_assume.statement).condition : c if c.variable == "aws:SourceArn" && contains(c.values, "arn:aws:cloudtrail:us-east-1:123456789012:trail/demo-app")]) == 1
     )
     error_message = "The CloudTrail-to-logs role trust must be conditioned on this account and this trail."
+  }
+}
+
+run "noncurrent_expiry_cleans_delete_markers" {
+  command = plan
+
+  assert {
+    condition = alltrue([
+      for c in [aws_s3_bucket_lifecycle_configuration.trail, aws_s3_bucket_lifecycle_configuration.logs] :
+      anytrue([for r in c.rule : length(r.expiration) > 0 && r.expiration[0].expired_object_delete_marker == true])
+      if anytrue([for r in c.rule : length(r.noncurrent_version_expiration) > 0])
+    ])
+    error_message = "Every lifecycle configuration with noncurrent_version_expiration must have a rule with expired_object_delete_marker = true."
+  }
+}
+
+run "password_policy_on_by_default" {
+  command = plan
+
+  assert {
+    condition     = length(aws_iam_account_password_policy.strict) == 1
+    error_message = "The account password policy must be created by default."
+  }
+}
+
+run "password_policy_off" {
+  command = plan
+
+  variables {
+    password_policy_enabled = false
+  }
+
+  assert {
+    condition     = length(aws_iam_account_password_policy.strict) == 0
+    error_message = "password_policy_enabled = false must create no password policy."
   }
 }
