@@ -134,3 +134,12 @@ run "rejects_bad_bucket_name" {
 
   expect_failures = [var.bucket_name]
 }
+
+run "noncurrent_expiry_cleans_delete_markers" {
+  command = plan
+
+  assert {
+    condition     = anytrue([for r in aws_s3_bucket_lifecycle_configuration.this.rule : length(r.expiration) > 0 && r.expiration[0].expired_object_delete_marker == true]) || !anytrue([for r in aws_s3_bucket_lifecycle_configuration.this.rule : length(r.noncurrent_version_expiration) > 0])
+    error_message = "Every lifecycle configuration with noncurrent_version_expiration must have a rule with expired_object_delete_marker = true."
+  }
+}

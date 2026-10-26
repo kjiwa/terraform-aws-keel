@@ -68,6 +68,7 @@ The account IAM password policy is applied unconditionally; there is no variable
 | log\_retention\_days | Days to retain the trail, the S3 access logs, and by default the trail's log group (number). The trail bucket is Object-Locked for this long. SOC2 commonly expects at least a year. | `number` | `365` | no |
 | log\_source\_buckets | Workload buckets to enable S3 server access logging on and to authorize as log senders (list of objects). Each has name, the bucket to attach logging to, and arn, used in the delivery policy's SourceArn condition. | ```list(object({ name = string arn = string }))``` | `[]` | no |
 | metric\_namespace | CloudWatch namespace for the CloudTrail metric-filter alarms (string), or null to derive it from name\_prefix: each hyphen-separated word capitalized, then Audit. | `string` | `null` | no |
+| password\_policy\_enabled | Manage the account-wide IAM password policy (bool). The policy is account-global; false leaves an existing one unmanaged, for accounts where another stack owns it. Turning it off on a deployed stack deletes the managed policy. | `bool` | `true` | no |
 
 ## Outputs
 

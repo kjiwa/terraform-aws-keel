@@ -95,6 +95,16 @@ resource "aws_s3_bucket_lifecycle_configuration" "trail" {
       days_after_initiation = 7
     }
   }
+
+  rule {
+    id     = "expire-delete-markers"
+    status = "Enabled"
+    filter {}
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
 }
 
 data "aws_iam_policy_document" "trail" {

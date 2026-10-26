@@ -58,6 +58,13 @@ variable "kms_encryption_enabled" {
   nullable    = false
 }
 
+variable "password_policy_enabled" {
+  description = "Manage the account-wide IAM password policy (bool). The policy is account-global; false leaves an existing one unmanaged, for accounts where another stack owns it. Turning it off on a deployed stack deletes the managed policy."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
 variable "metric_namespace" {
   description = "CloudWatch namespace for the CloudTrail metric-filter alarms (string), or null to derive it from name_prefix: each hyphen-separated word capitalized, then Audit."
   type        = string
