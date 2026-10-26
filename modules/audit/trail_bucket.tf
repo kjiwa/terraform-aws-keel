@@ -73,7 +73,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "trail" {
 # the current version non-current (allowed even while locked). The object
 # isn't actually removed until `noncurrent_version_expiration` clears the
 # noncurrent version 90 days later. Net effect: retained and immutable for
-# log_retention_days, then gone 90 days after that.
+# log_retention_days, then gone 90 days after that. `expire-delete-markers`
+# then sweeps the orphaned marker.
 resource "aws_s3_bucket_lifecycle_configuration" "trail" {
   bucket     = aws_s3_bucket.trail.id
   depends_on = [aws_s3_bucket_versioning.trail]

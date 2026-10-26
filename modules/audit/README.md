@@ -2,7 +2,7 @@
 
 Account audit baseline: multi-region CloudTrail into an Object-Locked bucket, optional KMS encryption, IAM Access Analyzer, S3 access logging, tamper-detection alarms, and an account password policy.
 
-The account IAM password policy is applied unconditionally; there is no variable to turn it off, and it replaces any policy already set on the account.
+The account IAM password policy is applied by default and replaces any policy already set on the account; `password_policy_enabled = false` leaves it unmanaged.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
