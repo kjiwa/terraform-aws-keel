@@ -19,7 +19,7 @@ variable "vault_name" {
 }
 
 variable "source_account_id" {
-  description = "AWS account ID of the workload account whose backups are copied here (string). It is granted backup:CopyIntoBackupVault on the vault and encrypt-shaped access to the vault's key, and nothing else: it can write copies here but cannot delete them."
+  description = "AWS account ID of the workload account whose backups are copied here (string). It is granted backup:CopyIntoBackupVault on the vault and data-key access to the vault's key (Encrypt, Decrypt, ReEncrypt, GenerateDataKey, DescribeKey, CreateGrant), and nothing else: it can write and read copies here but cannot delete them or administer the key."
   type        = string
 
   validation {
@@ -61,6 +61,18 @@ variable "vault_reader_source_role_name" {
   validation {
     condition     = var.vault_reader_source_role_name == null || can(regex("^[A-Za-z0-9+=,.@_-]{1,64}$", coalesce(var.vault_reader_source_role_name, "-")))
     error_message = "vault_reader_source_role_name must be null or a valid IAM role name."
+  }
+}
+
+variable "vault_reader_source_role_path" {
+  description = "IAM path of the vault reader's source role (string): starts and ends with a slash, \"/\" for none. Used to build the trusted role ARN."
+  type        = string
+  default     = "/"
+  nullable    = false
+
+  validation {
+    condition     = startswith(var.vault_reader_source_role_path, "/") && endswith(var.vault_reader_source_role_path, "/")
+    error_message = "vault_reader_source_role_path must start and end with a slash, for example / or /service-role/."
   }
 }
 

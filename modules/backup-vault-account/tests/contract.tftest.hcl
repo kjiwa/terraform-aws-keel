@@ -266,6 +266,44 @@ run "vault_reader_is_scoped_to_one_source_role" {
   }
 }
 
+run "vault_reader_role_path_defaults_to_root" {
+  command = plan
+
+  variables {
+    vault_reader_source_role_name = "demo-app-status"
+  }
+
+  assert {
+    condition     = one(one(one(data.aws_iam_policy_document.vault_reader_assume[0].statement).condition).values) == "arn:aws:iam::${var.source_account_id}:role/demo-app-status"
+    error_message = "With the default path the trusted ARN must be role/<name> with no path segment."
+  }
+}
+
+run "vault_reader_trusts_a_pathed_source_role" {
+  command = plan
+
+  variables {
+    vault_reader_source_role_name = "demo-app-status"
+    vault_reader_source_role_path = "/service-role/"
+  }
+
+  assert {
+    condition     = one(one(one(data.aws_iam_policy_document.vault_reader_assume[0].statement).condition).values) == "arn:aws:iam::${var.source_account_id}:role/service-role/demo-app-status"
+    error_message = "The trusted ARN must include the source role path."
+  }
+}
+
+run "rejects_role_path_without_slashes" {
+  command = plan
+
+  variables {
+    vault_reader_source_role_name = "demo-app-status"
+    vault_reader_source_role_path = "service-role"
+  }
+
+  expect_failures = [var.vault_reader_source_role_path]
+}
+
 run "rejects_bad_source_account" {
   command = plan
 
