@@ -201,6 +201,75 @@ run "rejects_record_in_unknown_zone" {
   expect_failures = [var.records]
 }
 
+run "rejects_apex_ns_record" {
+  command = plan
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  variables {
+    records = {
+      apex_ns = {
+        zone   = "example.org"
+        name   = "example.org"
+        type   = "NS"
+        values = ["ns.example.com"]
+      }
+    }
+  }
+
+  expect_failures = [var.records]
+}
+
+run "rejects_apex_soa_record" {
+  command = plan
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  variables {
+    records = {
+      apex_soa = {
+        zone   = "example.org"
+        name   = "example.org."
+        type   = "SOA"
+        values = ["ns.example.com. hostmaster.example.com. 1 7200 900 1209600 86400"]
+      }
+    }
+  }
+
+  expect_failures = [var.records]
+}
+
+run "allows_delegation_ns_below_the_apex" {
+  command = plan
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  variables {
+    records = {
+      delegation = {
+        zone   = "example.org"
+        name   = "sub.example.org"
+        type   = "NS"
+        values = ["ns.example.com"]
+      }
+    }
+  }
+
+  assert {
+    condition     = length(aws_route53_record.this) == 1
+    error_message = "NS records below the apex are delegations and must be allowed."
+  }
+}
+
 run "rejects_bad_prefix" {
   command = plan
 

@@ -30,6 +30,14 @@ variable "records" {
     condition     = alltrue([for r in var.records : contains(keys(var.domains), r.zone)])
     error_message = "Every records entry must name a zone that is a key of domains, because a record can only be created in a hosted zone this module manages."
   }
+
+  validation {
+    condition = alltrue([
+      for r in var.records :
+      !(contains(["NS", "SOA"], upper(r.type)) && trimsuffix(lower(r.name), ".") == lower(r.zone))
+    ])
+    error_message = "records must not contain NS or SOA records at a zone apex, because Route 53 creates them with the hosted zone and a duplicate would overwrite the delegation set."
+  }
 }
 
 variable "dnssec_key_deletion_window_days" {

@@ -11,6 +11,7 @@ Shared Terraform modules and scripts for single-instance AWS apps: audit, finops
 | [`modules/dns`](modules/dns) | Route 53 hosted zones, optional DNSSEC per domain, extra records. |
 | [`modules/state-bucket`](modules/state-bucket) | S3 bucket for Terraform state: versioned, TLS-only, optional KMS. |
 | [`modules/backup-vault-account`](modules/backup-vault-account) | Backup-account side of cross-account AWS Backup: KMS key, copy-in vault, optional Vault Lock, restore role. |
+| [`modules/data-volume`](modules/data-volume) | Encrypted EBS data volume with an AWS Backup plan: local, cross-region or cross-account copies, AWS-managed or customer-managed vault keys. |
 
 ## Usage
 

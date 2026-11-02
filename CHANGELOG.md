@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.0
+
+### Added
+
+- data-volume: encrypted EBS data volume with `prevent_destroy` and an AWS Backup plan (local, cross_region, cross_account, disabled). `vault_kms` selects `aws_managed` or `cmk` for the vaults; `extra_backup_resource_arns` adds resources such as an S3 bucket to the selection.
+- backup-vault-account: `vault_reader_source_role_path` (default `/`) for a vault reader source role that has an IAM path.
+
+### Fixed
+
+- dns: `records` rejects NS and SOA records at a zone apex; Route 53 creates them with the zone.
+
+### Changed
+
+- backup-vault-account: the `source_account_id` description lists the key access the source account is granted.
+
 ## v0.1.2
 
 ### Fixed

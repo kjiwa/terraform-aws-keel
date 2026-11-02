@@ -75,7 +75,7 @@ data "aws_iam_policy_document" "vault_reader_assume" {
     condition {
       test     = "StringEquals"
       variable = "aws:PrincipalArn"
-      values   = ["arn:aws:iam::${var.source_account_id}:role/${var.vault_reader_source_role_name}"]
+      values   = ["arn:aws:iam::${var.source_account_id}:role${var.vault_reader_source_role_path}${var.vault_reader_source_role_name}"]
     }
   }
 }
