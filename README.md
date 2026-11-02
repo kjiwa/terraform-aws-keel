@@ -1,6 +1,6 @@
 # terraform-aws-keel
 
-Shared Terraform modules and scripts for single-instance AWS apps: audit, finops, DNS, state, and backup governance.
+Shared Terraform modules and scripts for single-instance AWS apps: audit, finops, DNS, state, and backup governance, plus the encrypted data volume with its AWS Backup plan. Each app keeps its own compute, edge and delivery: what serves the origin and how releases reach the instance differ between apps and are not shared.
 
 ## Modules
 
