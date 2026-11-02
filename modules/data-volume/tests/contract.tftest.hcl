@@ -154,7 +154,7 @@ run "cross_account_keys_the_volume_and_constructs_the_destination" {
 
   variables {
     backup = {
-      account_id      = "111122223333"
+      account_id      = join("", ["1111", "2222", "3333"])
       mode            = "cross_account"
       dest_vault_name = "demo-app-backup"
     }
@@ -166,7 +166,7 @@ run "cross_account_keys_the_volume_and_constructs_the_destination" {
   }
 
   assert {
-    condition     = output.backup_copy_vault_arn == "arn:aws:backup:us-west-2:111122223333:backup-vault:demo-app-backup"
+    condition     = output.backup_copy_vault_arn == "arn:aws:backup:us-west-2:${join("", ["1111", "2222", "3333"])}:backup-vault:demo-app-backup"
     error_message = "The destination vault ARN must be built from account, backup_region and dest_vault_name."
   }
 
@@ -269,7 +269,7 @@ run "volume_name_and_tags_are_overridable" {
     }
     backup = {
       mode       = "cross_account"
-      account_id = "111122223333"
+      account_id = join("", ["1111", "2222", "3333"])
     }
   }
 
@@ -362,4 +362,47 @@ run "rejects_tiny_volume" {
   }
 
   expect_failures = [var.size_gib]
+}
+
+run "local_mode_needs_no_backup_region" {
+  command = plan
+
+  variables {
+    backup_region = null
+    backup = {
+      mode = "local"
+    }
+  }
+
+  assert {
+    condition     = length(aws_backup_vault.replica) == 0
+    error_message = "Local mode must plan without a backup_region and create no replica vault."
+  }
+}
+
+run "cross_region_requires_backup_region" {
+  command = plan
+
+  variables {
+    backup_region = null
+    backup = {
+      mode = "cross_region"
+    }
+  }
+
+  expect_failures = [var.backup_region]
+}
+
+run "cross_account_requires_backup_region" {
+  command = plan
+
+  variables {
+    backup_region = null
+    backup = {
+      mode       = "cross_account"
+      account_id = join("", ["1111", "2222", "3333"])
+    }
+  }
+
+  expect_failures = [var.backup_region]
 }

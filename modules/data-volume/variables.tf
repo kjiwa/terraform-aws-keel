@@ -97,8 +97,14 @@ variable "backup" {
 }
 
 variable "backup_region" {
-  description = "Region of the off-site copy (string). The replica vault is created there under cross_region, and the destination vault ARN is built from it under cross_account, so it must match the backup account's region. Unused for local and disabled."
+  description = "Region of the off-site copy (string). The replica vault is created there under cross_region, and the destination vault ARN is built from it under cross_account, so it must match the backup account's region. Required for cross_region and cross_account, unused for local and disabled."
   type        = string
+  default     = null
+
+  validation {
+    condition     = var.backup_region != null || !contains(["cross_region", "cross_account"], var.backup.mode)
+    error_message = "backup_region is required when backup.mode is cross_region or cross_account, since it names the region of the off-site copy."
+  }
 }
 
 variable "vault_kms" {
