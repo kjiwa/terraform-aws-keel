@@ -30,13 +30,23 @@ unprotected() {
   ' "$1"
 }
 
+# scanned FILE: prints "type.name" for each key or vault block.
+scanned() {
+  grep -E '^resource "aws_(kms_key|backup_vault)" ' "$1" | awk '{ print $2 "." $3 }' | tr -d '"'
+}
+
 main() {
+  _main_count=0
   for _main_file in "$MODULES"/*/*.tf; do
     for _main_res in $(unprotected "$_main_file"); do
       _main_rel="${_main_file#"$MODULES"/}"
       assert_eq "$_main_rel $_main_res has prevent_destroy" "protected" "unprotected"
     done
   done
+  for _main_file in "$MODULES"/*/*.tf; do
+    _main_count=$((_main_count + $(scanned "$_main_file" | wc -l)))
+  done
+  assert_eq "scanned at least one key or vault" "yes" "$([ "$_main_count" -gt 0 ] && echo yes || echo no)"
   finish
 }
 

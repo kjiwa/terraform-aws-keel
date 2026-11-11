@@ -68,6 +68,11 @@ variable "backup" {
     Only cross_account yields a copy this account cannot delete. It also
     needs a customer-managed key on the volume, because aws/ebs cannot be
     shared with another account.
+
+    The customer-managed keys and vaults carry prevent_destroy, so a change
+    that would remove one (leaving cross_account, or disabling backups) fails
+    the plan. To retire one, delete the vault's recovery points and
+    detach the volume from the key, remove the lifecycle block, and apply.
   EOT
   type = object({
     mode                  = optional(string, "local")
