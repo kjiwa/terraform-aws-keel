@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1
+
+### Fixed
+
+- data-volume: `aws_kms_key.data`, `aws_kms_key.backup` and `aws_backup_vault.this` gain `prevent_destroy`. Leaving cross_account or disabling backups scheduled the volume's key for deletion while the volume still used it; the plan now errors instead.
+
 ## v0.2.0
 
 ### Added
