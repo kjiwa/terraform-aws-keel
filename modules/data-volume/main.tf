@@ -74,6 +74,10 @@ resource "aws_kms_key" "data" {
   tags = {
     Name = local.volume_name
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_kms_alias" "data" {

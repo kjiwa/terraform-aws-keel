@@ -108,6 +108,10 @@ resource "aws_kms_key" "backup" {
   tags = {
     Name = "${var.name_prefix}-backup"
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_kms_alias" "backup" {
@@ -123,6 +127,10 @@ resource "aws_backup_vault" "this" {
 
   tags = {
     Name = "${var.name_prefix}-backup"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -187,11 +195,12 @@ resource "aws_kms_alias" "backup_replica" {
   target_key_id = aws_kms_key.backup_replica[0].key_id
 }
 
-# prevent_destroy on the vault and its key: leaving cross_region drops both to
-# count 0, and Terraform would schedule the key for deletion while failing to
-# delete the non-empty vault, leaving copies unreadable in 30 days. The plan
-# errors instead. To retire it, delete the recovery points, remove these
-# lifecycle blocks, and apply.
+# prevent_destroy on every vault and key here: leaving cross_region (or
+# cross_account, or disabling backups) drops them to count 0, and Terraform
+# would schedule a key for deletion while failing to delete the non-empty vault
+# or while the data volume still uses it, leaving copies or the volume
+# unreadable in 30 days. The plan errors instead. To retire it, delete the
+# recovery points, remove these lifecycle blocks, and apply.
 resource "aws_backup_vault" "replica" {
   count       = local.backup_cross_region ? 1 : 0
   region      = var.backup_region
