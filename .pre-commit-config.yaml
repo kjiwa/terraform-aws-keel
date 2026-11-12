@@ -7,6 +7,9 @@ repos:
       # module is validated standalone (hashicorp/terraform#28490);
       # its terraform test loads the full configuration instead.
       - id: terraform_validate
+        # Re-init once when a cached provider no longer matches the lock file.
+        args:
+          - --hook-config=--retry-once-with-cleanup=true
         exclude: ^modules/dns/
       - id: terraform_tflint
         args:
