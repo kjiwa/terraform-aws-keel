@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.0
+
+### Added
+
+- scripts/rightsize-check.sh: read-only Spot scale-back decision for apps to vendor. `rightsize-check.sh REGION ASG_NAME MIN_UPTIME_HOURS` exits 0 to replace when the instance is Spot, past the uptime cooldown, and the cheapest eligible Spot pool in its AZ costs at most 75% of its own type and scores at least 5 on GetSpotPlacementScores; any other outcome, including an API failure, exits non-zero. Needs `ec2:GetSpotPlacementScores`, `ec2:DescribeSpotPriceHistory`, `ec2:GetInstanceTypesFromInstanceRequirements` and `autoscaling:DescribeAutoScalingGroups`.
+
 ## v0.2.1
 
 ### Fixed
