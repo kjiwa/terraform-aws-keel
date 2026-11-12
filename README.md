@@ -1,6 +1,6 @@
 # terraform-aws-keel
 
-Shared Terraform modules and scripts for single-instance AWS apps: audit, finops, DNS, state, and backup governance, plus the encrypted data volume with its AWS Backup plan. Each app keeps its own compute, edge and delivery: what serves the origin and how releases reach the instance differ between apps and are not shared.
+Shared Terraform modules and scripts for single-instance AWS apps: audit, finops, DNS, state, and backup governance, plus the encrypted data volume with its AWS Backup plan, and a read-only Spot rightsize check that apps vendor onto their instances. Each app keeps its own compute, edge and delivery: what serves the origin and how releases reach the instance differ between apps and are not shared.
 
 ## Modules
 
@@ -19,7 +19,7 @@ Pin every module to a release tag with a literal `ref`:
 
 ```hcl
 module "dns" {
-  source = "github.com/kjiwa/terraform-aws-keel//modules/dns?ref=v0.2.1"
+  source = "github.com/kjiwa/terraform-aws-keel//modules/dns?ref=v0.3.0"
 
   name_prefix = "example"
   domains     = { "example.com" = { dnssec = true } }
