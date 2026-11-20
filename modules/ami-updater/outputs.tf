@@ -3,7 +3,7 @@ output "function_name" {
   value       = aws_lambda_function.this.function_name
 }
 
-output "age_alarm_name" {
-  description = "Alarm that fires when a running instance's AMI is over 21 days old."
-  value       = aws_cloudwatch_metric_alarm.age.alarm_name
+output "alarm_names" {
+  description = "Alarms for a running AMI far past ami_max_age_days and for updater failures."
+  value       = [aws_cloudwatch_metric_alarm.age.alarm_name, aws_cloudwatch_metric_alarm.errors.alarm_name]
 }

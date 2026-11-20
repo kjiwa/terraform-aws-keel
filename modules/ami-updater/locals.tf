@@ -8,5 +8,7 @@ locals {
   # Must match NAMESPACE in lambda/ami_updater.py.
   metric_namespace = "AmiUpdater"
 
+  age_alarm_days = var.ami_max_age_days + 7
+
   arn_prefix = "arn:${data.aws_partition.current.partition}"
 }

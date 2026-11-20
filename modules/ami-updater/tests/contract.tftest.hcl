@@ -97,7 +97,7 @@ run "alarm_watches_the_oldest_running_image" {
       && aws_cloudwatch_metric_alarm.age.treat_missing_data == "notBreaching"
       && contains(aws_cloudwatch_metric_alarm.age.alarm_actions, "arn:aws:sns:us-west-2:123456789012:demo")
     )
-    error_message = "The alarm must fire above 21 days on the group's AmiAgeDays and notify the topic."
+    error_message = "With the default 14-day limit the alarm must fire above 21 days on the group's AmiAgeDays and notify the topic."
   }
 }
 
@@ -170,5 +170,35 @@ run "tags_are_created_only_by_launches" {
   assert {
     condition     = length([for s in data.aws_iam_policy_document.this.statement : s if contains(s.actions, "ec2:CreateTags")]) == 1
     error_message = "UpdateAutoScalingGroup needs CreateTags for templates that tag instances at launch."
+  }
+}
+
+run "age_threshold_follows_the_refresh_limit" {
+  command = plan
+  variables {
+    ami_max_age_days = 10
+  }
+
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.age.threshold == 17
+    error_message = "The age alarm must fire a week after the refresh limit."
+  }
+}
+
+run "failures_are_alarmed" {
+  command = plan
+
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.errors.namespace == "AWS/Lambda"
+      && aws_cloudwatch_metric_alarm.errors.metric_name == "Errors"
+      && aws_cloudwatch_metric_alarm.errors.dimensions["FunctionName"] == "demo-ami-updater"
+      && aws_cloudwatch_metric_alarm.errors.statistic == "Sum"
+      && aws_cloudwatch_metric_alarm.errors.threshold == 0
+      && aws_cloudwatch_metric_alarm.errors.comparison_operator == "GreaterThanThreshold"
+      && aws_cloudwatch_metric_alarm.errors.treat_missing_data == "notBreaching"
+      && contains(aws_cloudwatch_metric_alarm.errors.alarm_actions, "arn:aws:sns:us-west-2:123456789012:demo")
+    )
+    error_message = "A failed run must notify the topic, since the age alarm cannot see a failing updater."
   }
 }

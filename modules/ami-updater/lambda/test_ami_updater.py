@@ -48,6 +48,7 @@ class FakeEc2:
         self.instances = instances or {}
         self.versions = {lt: 3 for lt in LT.values()}
         self.new_versions = []
+        self.gone = set()
 
     def describe_launch_template_versions(self, LaunchTemplateId, Versions):
         arch = {v: k for k, v in LT.items()}[LaunchTemplateId]
@@ -60,6 +61,8 @@ class FakeEc2:
         return {"LaunchTemplateVersions": out}
 
     def describe_images(self, ImageIds):
+        if any(i in self.gone for i in ImageIds):
+            raise MissingImage()
         return {"Images": [{"ImageId": i, "CreationDate": self.created[i]} for i in ImageIds if i in self.created]}
 
     def create_launch_template_version(self, **kwargs):
@@ -85,6 +88,10 @@ def mixed_policy(version):
         },
         "InstancesDistribution": {"SpotAllocationStrategy": "price-capacity-optimized", "OnDemandBaseCapacity": 0},
     }
+
+
+class MissingImage(Exception):
+    response = {"Error": {"Code": "InvalidAMIID.NotFound"}}
 
 
 class FakeAutoscaling:
@@ -230,7 +237,7 @@ def test_does_not_refresh_onto_the_image_it_already_runs():
     assert autoscaling.started == []
 
 
-@pytest.mark.parametrize("status", ["Pending", "InProgress", "Cancelling", "RollbackInProgress"])
+@pytest.mark.parametrize("status", ["Pending", "InProgress", "Cancelling", "RollbackInProgress", "Baking"])
 def test_skips_everything_while_a_refresh_is_running(status):
     created = {**{a: days_ago(2) for a in NEW.values()}, "ami-ancient": days_ago(15)}
     ec2 = FakeEc2(OLD, created=created, instances={"i-1": "ami-ancient"})
@@ -281,7 +288,8 @@ def test_dry_run_changes_nothing_and_reports_what_it_would_do():
     result, ec2, autoscaling, _ = run(cfg=config(dry_run=True), ec2=ec2, autoscaling=FakeAutoscaling(["i-1"]))
     assert ec2.new_versions == [] and autoscaling.updates == [] and autoscaling.started == []
     assert result["dry_run"] is True
-    assert sorted(result["new_versions"]) == ["arm64", "x86_64"] and result["pin"] is True and result["refresh"] == "dry-run"
+    assert result["new_versions"] == {} and sorted(result["would_write"]) == ["arm64", "x86_64"]
+    assert result["pin"] is True and result["refresh"] == "dry-run"
 
 
 def test_config_reads_the_environment():
@@ -298,3 +306,20 @@ def test_config_reads_the_environment():
     cfg = ami_updater.Config.from_env(env)
     assert cfg.max_age_days == 14 and cfg.min_age_hours == 24 and cfg.dry_run is True and cfg.alarm_names == ["a"]
     assert cfg.preferences["instance_warmup"] is None
+
+
+def test_a_deregistered_running_image_is_skipped_and_the_rest_still_counts():
+    created = {**{a: days_ago(2) for a in NEW.values()}, "ami-b": days_ago(9)}
+    ec2 = FakeEc2(OLD, created=created, instances={"i-1": "ami-gone", "i-2": "ami-b"})
+    ec2.gone = {"ami-gone"}
+    result, _, autoscaling, cloudwatch = run(ec2=ec2, autoscaling=FakeAutoscaling(["i-1", "i-2"]))
+    assert cloudwatch.metrics[0]["MetricData"][0]["Value"] == pytest.approx(9.0)
+    assert autoscaling.started == [] and "skipped" not in result
+
+
+def test_a_template_the_group_does_not_use_fails_before_anything_is_written():
+    cfg = config(launch_template_ids={**LT, "riscv": "lt-unused"}, ssm_parameters={**PARAMETERS, "riscv": "/p/riscv"})
+    ec2 = FakeEc2(OLD, created={a: days_ago(2) for a in NEW.values()})
+    with pytest.raises(ValueError, match="lt-unused"):
+        ami_updater.run(cfg, ec2, FakeAutoscaling(), FakeSsm({PARAMETERS[a]: NEW[a] for a in NEW}), FakeCloudwatch(), NOW)
+    assert ec2.new_versions == []

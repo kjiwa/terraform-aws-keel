@@ -67,7 +67,7 @@ variable "refresh_preferences" {
 }
 
 variable "alarm_topic_arn" {
-  description = "Existing SNS topic ARN notified when a running AMI is over 21 days old (string)."
+  description = "Existing SNS topic ARN notified when the updater fails or a running AMI is more than 7 days past ami_max_age_days old (string)."
   type        = string
 }
 

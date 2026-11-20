@@ -23,6 +23,7 @@ The consumer's launch template ignores changes to `image_id`, so Terraform seeds
 | [aws_cloudwatch_event_target.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
 | [aws_cloudwatch_log_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_cloudwatch_metric_alarm.age](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
+| [aws_cloudwatch_metric_alarm.errors](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_lambda_function.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
@@ -38,7 +39,7 @@ The consumer's launch template ignores changes to `image_id`, so Terraform seeds
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| alarm\_topic\_arn | Existing SNS topic ARN notified when a running AMI is over 21 days old (string). | `string` | n/a | yes |
+| alarm\_topic\_arn | Existing SNS topic ARN notified when the updater fails or a running AMI is more than 7 days past ami\_max\_age\_days old (string). | `string` | n/a | yes |
 | asg\_name | Name of the Auto Scaling group whose launch templates the updater advances (string). | `string` | n/a | yes |
 | launch\_template\_ids | Launch template ID per architecture the group uses (map of string); the key selects the entry of ssm\_parameters. The group must pin each template by version number, not $Latest, so that a Terraform-triggered refresh still follows template changes. | `map(string)` | n/a | yes |
 | name\_prefix | Prefix for every resource name this module creates (string, lowercase letters, digits and hyphens). | `string` | n/a | yes |
@@ -53,6 +54,6 @@ The consumer's launch template ignores changes to `image_id`, so Terraform seeds
 
 | Name | Description |
 | ---- | ----------- |
-| age\_alarm\_name | Alarm that fires when a running instance's AMI is over 21 days old. |
+| alarm\_names | Alarms for a running AMI far past ami\_max\_age\_days and for updater failures. |
 | function\_name | Updater Lambda function name; invoke it to run the updater outside its schedule. |
 <!-- END_TF_DOCS -->

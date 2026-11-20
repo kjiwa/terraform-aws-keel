@@ -17,7 +17,8 @@ import os
 NAMESPACE = "AmiUpdater"
 METRIC = "AmiAgeDays"
 LIVE_STATES = {"InService", "Pending", "Pending:Wait", "Pending:Proceed"}
-REFRESHING = {"Pending", "InProgress", "Cancelling", "RollbackInProgress"}
+REFRESHING = {"Pending", "InProgress", "Cancelling", "RollbackInProgress", "Baking"}
+MISSING_IMAGE_CODES = {"InvalidAMIID.NotFound", "InvalidAMIID.Unavailable"}
 
 
 @dataclasses.dataclass
@@ -49,11 +50,23 @@ def _age(created, now):
     return now - datetime.datetime.fromisoformat(created)
 
 
+def _is_missing_image(error):
+    return getattr(error, "response", {}).get("Error", {}).get("Code") in MISSING_IMAGE_CODES
+
+
 def _image_ages(ec2, image_ids, now):
-    if not image_ids:
-        return {}
-    images = ec2.describe_images(ImageIds=sorted(set(image_ids)))["Images"]
-    return {i["ImageId"]: _age(i["CreationDate"], now) for i in images}
+    """Age per image. An image that can no longer be described is left out: its age is unknown, so it never forces a refresh."""
+    ages = {}
+    for image_id in sorted(set(image_ids)):
+        try:
+            images = ec2.describe_images(ImageIds=[image_id])["Images"]
+        except Exception as error:
+            if not _is_missing_image(error):
+                raise
+            print(json.dumps({"unknown_image_age": image_id}))
+            continue
+        ages.update({i["ImageId"]: _age(i["CreationDate"], now) for i in images})
+    return ages
 
 
 def _specs(group):
@@ -113,25 +126,28 @@ def _publish_age(cloudwatch, config, ages):
 
 
 def _write_versions(config, ec2, ssm, now):
-    """Returns the latest (version, image) per architecture and the versions it wrote."""
+    """Returns the latest (version, image) per template, the versions written per architecture, and the architectures a dry run would write."""
     latest = {}
     written = {}
+    planned = []
     for arch, template_id in config.launch_template_ids.items():
         version, image = _latest(ec2, template_id)
         target = ssm.get_parameter(Name=config.ssm_parameters[arch])["Parameter"]["Value"]
         released = _image_ages(ec2, [target], now).get(target)
         if target != image and released is not None and released >= datetime.timedelta(hours=config.min_age_hours):
-            if not config.dry_run:
+            if config.dry_run:
+                planned.append(arch)
+            else:
                 response = ec2.create_launch_template_version(
                     LaunchTemplateId=template_id,
                     SourceVersion=str(version),
                     LaunchTemplateData={"ImageId": target},
                 )
                 version = response["LaunchTemplateVersion"]["VersionNumber"]
-            written[arch] = version
+                written[arch] = version
             image = target
         latest[template_id] = (version, image)
-    return latest, written
+    return latest, written, planned
 
 
 def _stale_pins(ec2, group, latest):
@@ -170,8 +186,16 @@ def _needs_refresh(config, instance_images, ages, targets):
     return any(ages.get(image) is not None and ages[image] > limit and image not in targets for image in instance_images.values())
 
 
+def _check_templates(config, group):
+    used = {s["LaunchTemplateId"] for s in _specs(group)}
+    unused = sorted(set(config.launch_template_ids.values()) - used)
+    if unused:
+        raise ValueError(f"group {config.asg_name} does not use launch template {', '.join(unused)}")
+
+
 def run(config, ec2, autoscaling, ssm, cloudwatch, now):
     group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[config.asg_name])["AutoScalingGroups"][0]
+    _check_templates(config, group)
     instance_images = _running_images(ec2, group)
     ages = _image_ages(ec2, instance_images.values(), now)
     _publish_age(cloudwatch, config, list(ages.values()))
@@ -180,7 +204,7 @@ def run(config, ec2, autoscaling, ssm, cloudwatch, now):
     if blocker:
         return {"skipped": blocker}
 
-    latest, written = _write_versions(config, ec2, ssm, now)
+    latest, written, planned = _write_versions(config, ec2, ssm, now)
     pins = _stale_pins(ec2, group, latest)
     if pins and not config.dry_run:
         autoscaling.update_auto_scaling_group(**_group_update(group, pins))
@@ -196,7 +220,7 @@ def run(config, ec2, autoscaling, ssm, cloudwatch, now):
                 Preferences=_refresh_preferences(config.preferences),
             )["InstanceRefreshId"]
 
-    return {"dry_run": config.dry_run, "new_versions": written, "pin": bool(pins), "refresh": refresh}
+    return {"dry_run": config.dry_run, "new_versions": written, "would_write": planned, "pin": bool(pins), "refresh": refresh}
 
 
 def handler(event, context):
