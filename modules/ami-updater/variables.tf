@@ -18,6 +18,12 @@ variable "launch_template_ids" {
   }
 }
 
+variable "instance_role_arns" {
+  description = "ARNs of the IAM roles behind the launch templates' instance profiles (list of string). UpdateAutoScalingGroup needs the caller to be able to pass them; leave empty for templates without an instance profile."
+  type        = list(string)
+  default     = []
+}
+
 variable "ssm_parameters" {
   description = "SSM public parameter holding the newest AMI, per architecture (map of string). Defaults to the Amazon Linux 2023 kernel-default parameters."
   type        = map(string)

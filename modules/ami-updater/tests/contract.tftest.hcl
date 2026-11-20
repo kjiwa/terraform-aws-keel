@@ -140,3 +140,35 @@ run "min_age_cannot_be_negative" {
 
   expect_failures = [var.min_age_hours]
 }
+
+run "pass_role_is_limited_to_the_instance_roles" {
+  command = plan
+  variables {
+    instance_role_arns = ["arn:aws:iam::123456789012:role/demo"]
+  }
+
+  assert {
+    condition = length([
+      for s in data.aws_iam_policy_document.this.statement : s if contains(s.actions, "iam:PassRole") && toset(s.resources) == toset(["arn:aws:iam::123456789012:role/demo"])
+    ]) == 1
+    error_message = "UpdateAutoScalingGroup passes the template's instance role, so PassRole must be granted for exactly those roles."
+  }
+}
+
+run "no_pass_role_without_instance_roles" {
+  command = plan
+
+  assert {
+    condition     = length([for s in data.aws_iam_policy_document.this.statement : s if contains(s.actions, "iam:PassRole")]) == 0
+    error_message = "Templates without an instance profile need no PassRole."
+  }
+}
+
+run "tags_are_created_only_by_launches" {
+  command = plan
+
+  assert {
+    condition     = length([for s in data.aws_iam_policy_document.this.statement : s if contains(s.actions, "ec2:CreateTags")]) == 1
+    error_message = "UpdateAutoScalingGroup needs CreateTags for templates that tag instances at launch."
+  }
+}
