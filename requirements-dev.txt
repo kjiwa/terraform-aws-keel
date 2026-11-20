@@ -1,0 +1,2 @@
+# Dev/test-only dependencies for the Lambda unit tests. Not shipped.
+pytest==9.2.0

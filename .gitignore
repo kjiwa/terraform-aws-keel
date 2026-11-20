@@ -4,6 +4,8 @@
 *.tfstate.backup
 .venv/
 __pycache__/
+.pytest_cache/
+modules/*/lambda/*.zip
 .idea/
 .vscode/
 .DS_Store

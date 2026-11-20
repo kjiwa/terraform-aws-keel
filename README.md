@@ -1,6 +1,6 @@
 # terraform-aws-keel
 
-Shared Terraform modules and scripts for single-instance AWS apps: audit, finops, DNS, state, and backup governance, plus the encrypted data volume with its AWS Backup plan, and a read-only Spot rightsize check that apps vendor onto their instances. Each app keeps its own compute, edge and delivery: what serves the origin and how releases reach the instance differ between apps and are not shared.
+Shared Terraform modules and scripts for single-instance AWS apps: audit, finops, DNS, state, and backup governance, plus the encrypted data volume with its AWS Backup plan, an AMI updater for Auto Scaling groups, and a read-only Spot rightsize check that apps vendor onto their instances. Each app keeps its own compute, edge and delivery: what serves the origin and how releases reach the instance differ between apps and are not shared.
 
 ## Modules
 
@@ -11,6 +11,7 @@ Shared Terraform modules and scripts for single-instance AWS apps: audit, finops
 | [`modules/dns`](modules/dns) | Route 53 hosted zones, optional DNSSEC per domain, extra records. |
 | [`modules/state-bucket`](modules/state-bucket) | S3 bucket for Terraform state: versioned, TLS-only, optional KMS. |
 | [`modules/backup-vault-account`](modules/backup-vault-account) | Backup-account side of cross-account AWS Backup: KMS key, copy-in vault, optional Vault Lock, restore role. |
+| [`modules/ami-updater`](modules/ami-updater) | Daily Lambda that writes launch template versions for the newest AL2023 AMI, points the Auto Scaling group at them, and starts an instance refresh only when a running AMI is too old. |
 | [`modules/data-volume`](modules/data-volume) | Encrypted EBS data volume with an AWS Backup plan: local, cross-region or cross-account copies, AWS-managed or customer-managed vault keys. |
 
 ## Usage
@@ -43,6 +44,7 @@ Releases follow semantic versioning. Before 1.0, a minor release may change inpu
 terraform -chdir=modules/finops init -backend=false
 terraform -chdir=modules/finops test
 sh scripts/tests/run.sh
+pip install -r requirements-dev.txt && pytest
 pre-commit run --all-files
 ```
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.0
+
+### Added
+
+- modules/ami-updater: daily Lambda that, when the SSM AMI parameter of an architecture has been published for `min_age_hours` (default 24) and differs from the launch template's latest version, writes a new launch template version and points the Auto Scaling group at it (`UpdateAutoScalingGroup`), so the group keeps pinning numeric versions and a Terraform-triggered refresh still follows template changes. It starts an instance refresh with `refresh_preferences` only when a running instance's AMI is older than `ami_max_age_days` (default 14) and a newer AMI is targeted. It skips a run while a refresh is in progress or a named alarm is in ALARM, publishes `AmiAgeDays`, and alarms fire when a running AMI is 7 days past `ami_max_age_days` and when the function errors. `dry_run` logs without writing.
+
 ## v0.3.0
 
 ### Added
